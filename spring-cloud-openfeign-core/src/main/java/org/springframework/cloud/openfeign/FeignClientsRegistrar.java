@@ -166,20 +166,31 @@ class FeignClientsRegistrar implements ImportBeanDefinitionRegistrar, ResourceLo
 		}
 	}
 
+	/**
+	 * 注册 FeignClient 客户端
+	 * @param metadata
+	 * @param registry
+	 */
 	public void registerFeignClients(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
 
+		// 待注册的组件，使用 Set 集合。
 		LinkedHashSet<BeanDefinition> candidateComponents = new LinkedHashSet<>();
+		// 从元数据中获取包含了 @EnableFeignClients 注解类
 		Map<String, Object> attrs = metadata.getAnnotationAttributes(EnableFeignClients.class.getName());
+		// 获取 @EnableFeignClients 注解配置的 clients 属性，这个属性如果配置了将这些类做为 Feign，而不会再读取那些标注了 @FeignClient 的接口
 		final Class<?>[] clients = attrs == null ? null : (Class<?>[]) attrs.get("clients");
+		// 没有配置 clients 属性
 		if (clients == null || clients.length == 0) {
 			ClassPathScanningCandidateComponentProvider scanner = getScanner();
 			scanner.setResourceLoader(this.resourceLoader);
+			// 设置扫描包含 @FeignClient 注解的类(包含接口)
 			scanner.addIncludeFilter(new AnnotationTypeFilter(FeignClient.class));
 			Set<String> basePackages = getBasePackages(metadata);
 			for (String basePackage : basePackages) {
 				candidateComponents.addAll(scanner.findCandidateComponents(basePackage));
 			}
 		}
+		// @EnableFeignClients 注解的 clients 属性配置了类则会走这里，去加载这些类成为 Bean
 		else {
 			for (Class<?> clazz : clients) {
 				candidateComponents.add(new AnnotatedGenericBeanDefinition(clazz));
@@ -189,6 +200,7 @@ class FeignClientsRegistrar implements ImportBeanDefinitionRegistrar, ResourceLo
 		for (BeanDefinition candidateComponent : candidateComponents) {
 			if (candidateComponent instanceof AnnotatedBeanDefinition) {
 				// verify annotated class is an interface
+				// 校验这些带有注解 @FeignClient 的类是接口(interface)
 				AnnotatedBeanDefinition beanDefinition = (AnnotatedBeanDefinition) candidateComponent;
 				AnnotationMetadata annotationMetadata = beanDefinition.getMetadata();
 				Assert.isTrue(annotationMetadata.isInterface(), "@FeignClient can only be specified on an interface");
