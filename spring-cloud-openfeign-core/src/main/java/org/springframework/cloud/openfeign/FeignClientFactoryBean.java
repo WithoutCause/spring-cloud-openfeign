@@ -419,7 +419,7 @@ public class FeignClientFactoryBean
 				url = name;
 			}
 			url += cleanPath();
-			// 没有配置 url 忏悔，通过负载均衡调用指定的目标远程方法
+			// 没有配置 url 属性，通过负载均衡调用指定的目标远程方法
 			return (T) loadBalance(builder, context, new HardCodedTarget<>(type, name, url));
 		}
 		// 在 @FeignClient 中配置了 url 属性，但是没有以 http 打头，默认加上 http:// 协议头
